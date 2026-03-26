@@ -180,11 +180,17 @@ export default function RobuxGiftCheckout() {
         setError("");
 
         const searchResponse = await fetch(
-          buildApiUrl(`users.roblox.com/v1/users/search?keyword=${encodeURIComponent(debouncedQuery)}&limit=8`)
+          buildApiUrl(`users.roblox.com/v1/users/search?keyword=${encodeURIComponent(debouncedQuery)}&limit=10`)
         );
 
         if (!searchResponse.ok) {
-          throw new Error("Unable to search Roblox users right now.");
+          let message = "Unable to search Roblox users right now.";
+          try {
+            const errorJson = await searchResponse.json();
+            const apiMessage = errorJson?.errors?.[0]?.message;
+            if (apiMessage) message = apiMessage;
+          } catch {}
+          throw new Error(message);
         }
 
         const searchJson = await searchResponse.json();
@@ -244,7 +250,8 @@ export default function RobuxGiftCheckout() {
   const helperText = useMemo(() => {
     if (!query.trim()) return "Search public Roblox usernames";
     if (loading) return "Searching Roblox players...";
-    if (error) return "Live search unavailable in preview";
+    if (error === "preview_blocked") return "Live search unavailable right now";
+    if (error) return error;
     if (results.length === 0) return "No players found";
     return `${results.length} player${results.length > 1 ? "s" : ""} found`;
   }, [query, loading, error, results.length]);
@@ -402,7 +409,7 @@ export default function RobuxGiftCheckout() {
                 )}
               </div>
 
-              {error && !ROBLOX_PROXY_BASE && (
+              {error === "preview_blocked" && (
                 <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200/80 bg-amber-50/90 p-3 text-xs text-amber-800 shadow-sm">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>Live username search needs a small proxy after deployment. The preview here cannot call Roblox directly.</span>
