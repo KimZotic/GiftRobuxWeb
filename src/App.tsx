@@ -185,12 +185,21 @@ export default function RobuxGiftCheckout() {
         );
 
         if (!searchResponse.ok) {
-          let message = "Unable to search Roblox users right now.";
+          const raw = await searchResponse.text();
+          let message = `Search failed (${searchResponse.status})`;
+
           try {
-            const errorJson = await searchResponse.json();
-            const apiMessage = errorJson?.errors?.[0]?.message;
-            if (apiMessage) message = apiMessage;
-          } catch {}
+            const errorJson = JSON.parse(raw);
+            const apiMessage = errorJson?.errors?.[0]?.message || errorJson?.message;
+            if (apiMessage) {
+              message = `${apiMessage} (${searchResponse.status})`;
+            }
+          } catch {
+            if (raw && !raw.trim().startsWith("<!DOCTYPE")) {
+              message = `${raw.slice(0, 120)} (${searchResponse.status})`;
+            }
+          }
+
           throw new Error(message);
         }
 
