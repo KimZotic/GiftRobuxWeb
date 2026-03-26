@@ -180,7 +180,8 @@ export default function RobuxGiftCheckout() {
         setError("");
 
         const searchResponse = await fetch(
-          buildApiUrl(`users.roblox.com/v1/users/search?keyword=${encodeURIComponent(debouncedQuery)}&limit=10`)
+          buildApiUrl(`users.roblox.com/v1/users/search?keyword=${encodeURIComponent(debouncedQuery)}&limit=10`),
+          { cache: "no-store" }
         );
 
         if (!searchResponse.ok) {
@@ -198,27 +199,34 @@ export default function RobuxGiftCheckout() {
 
         if (cancelled) return;
         setResults(users);
+        setAvatars({});
 
         if (!users.length) {
-          setAvatars({});
           return;
         }
 
-        const userIds = users.map((user) => user.id).join(",");
-        const thumbResponse = await fetch(
-          buildApiUrl(`thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userIds}&size=150x150&format=Png&isCircular=false`)
-        );
+        try {
+          const userIds = users.map((user) => user.id).join(",");
+          const thumbResponse = await fetch(
+            buildApiUrl(`thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userIds}&size=150x150&format=Png&isCircular=false`),
+            { cache: "no-store" }
+          );
 
-        if (!thumbResponse.ok) return;
+          if (!thumbResponse.ok) {
+            return;
+          }
 
-        const thumbJson = await thumbResponse.json();
-        const data: RobloxThumbnail[] = Array.isArray(thumbJson?.data) ? thumbJson.data : [];
-        const nextAvatars = data.reduce<Record<number, string>>((acc, item) => {
-          if (item.targetId && item.imageUrl) acc[item.targetId] = item.imageUrl;
-          return acc;
-        }, {});
+          const thumbJson = await thumbResponse.json();
+          const data: RobloxThumbnail[] = Array.isArray(thumbJson?.data) ? thumbJson.data : [];
+          const nextAvatars = data.reduce<Record<number, string>>((acc, item) => {
+            if (item.targetId && item.imageUrl) acc[item.targetId] = item.imageUrl;
+            return acc;
+          }, {});
 
-        if (!cancelled) setAvatars(nextAvatars);
+          if (!cancelled) setAvatars(nextAvatars);
+        } catch {
+          if (!cancelled) setAvatars({});
+        }
       } catch (err) {
         if (!cancelled) {
           setResults([]);
@@ -252,6 +260,7 @@ export default function RobuxGiftCheckout() {
     if (loading) return "Searching Roblox players...";
     if (error === "preview_blocked") return "Live search unavailable right now";
     if (error) return error;
+    if (results.length > 0) return `${results.length} player${results.length > 1 ? "s" : ""} found`;
     if (results.length === 0) return "No players found";
     return `${results.length} player${results.length > 1 ? "s" : ""} found`;
   }, [query, loading, error, results.length]);
