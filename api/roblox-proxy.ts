@@ -1,4 +1,4 @@
-export async function GET(request: Request) {
+export function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const target = searchParams.get("url");
 
@@ -20,16 +20,9 @@ export async function GET(request: Request) {
     return new Response("Blocked host", { status: 400 });
   }
 
-  const res = await fetch(parsed.toString(), {
+  return fetch(parsed.toString(), {
     headers: {
       accept: "application/json",
-    },
-  });
-
-  return new Response(await res.text(), {
-    status: res.status,
-    headers: {
-      "content-type": res.headers.get("content-type") || "application/json",
     },
   });
 }
