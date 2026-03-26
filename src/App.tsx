@@ -26,7 +26,7 @@ type RobloxThumbnail = {
   imageUrl?: string;
 };
 
-const ROBLOX_PROXY_BASE = "";
+const ROBLOX_PROXY_BASE = "/api";
 // Bila deploy, isi contoh:
 // const ROBLOX_PROXY_BASE = "/api/roblox";
 // lalu endpoint jadi /api/roblox/users/search?keyword=...
@@ -40,7 +40,9 @@ function cn(...classes: string[]) {
 }
 
 function buildApiUrl(path: string) {
-  if (ROBLOX_PROXY_BASE) return `${ROBLOX_PROXY_BASE}${path}`;
+  if (ROBLOX_PROXY_BASE) {
+    return `${ROBLOX_PROXY_BASE}/roblox-proxy?url=${encodeURIComponent(`https://${path}`)}`;
+  }
   return `https://${path}`;
 }
 
